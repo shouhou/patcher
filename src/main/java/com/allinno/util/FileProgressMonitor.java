@@ -20,18 +20,18 @@ public class FileProgressMonitor implements SftpProgressMonitor {
 			buf.append("*");
 		}
 		String name = String.format("[%-25s]", buf.toString());
-		System.out.print("Percent:" + name +this.percent + "%\r");
+		//System.out.print("Percent:" + name +this.percent + "%\r");
 		return true;
 	}
 
 	@Override
 	public void end() {
-		System.out.println("Transferring Done");
+		//System.out.println("Transferring Done");
 	}
 
 	@Override
 	public void init(int op, String src, String dest, long max) {
-		System.out.println("Transferring Begin");
+		//System.out.println("Transferring Begin");
 	}
 
 	public static void main(String[] args) {

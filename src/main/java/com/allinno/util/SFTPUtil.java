@@ -20,6 +20,7 @@ public class SFTPUtil {
 	private int port;
 	private String user;
 	private String password;
+	public Session session;
 	public ChannelSftp sftp;
 
 	public SFTPUtil(String ip, int port, String user, String password) {
@@ -35,19 +36,20 @@ public class SFTPUtil {
 		try {
 			JSch jsch = new JSch();
 			jsch.getSession(user, ip, port);
-			Session sshSession = jsch.getSession(user, ip, port);
-			sshSession.setPassword(password);
+			session = jsch.getSession(user, ip, port);
+			session.setPassword(password);
 			Properties sshConfig = new Properties();
 			sshConfig.put("StrictHostKeyChecking", "no");
-			sshSession.setConfig(sshConfig);
+			session.setConfig(sshConfig);
 			System.out.println("Start to connect" + ip + ":" + port);
-			sshSession.connect();
-			Channel channel = sshSession.openChannel("sftp");
+			session.connect();
+			Channel channel = session.openChannel("sftp");
 			channel.connect();
 			sftp = (ChannelSftp) channel;
 			System.out.println("Connected to " + ip + ":" + port);
 			return sftp;
 		} catch (Exception e) {
+			System.out.println("Connect to " + ip + ":" + port+ "Failed,Please Check Name and Password!");	
 			e.printStackTrace();
 		}
 		return null;
@@ -85,10 +87,10 @@ public class SFTPUtil {
 	public void uploadDirectory(String directory, String uploadDirectory) {
 		try {
 			System.out.println("上传目录:" + uploadDirectory);
-			sftp.cd(directory);
 			File dir = new File(uploadDirectory);
 			for (File file : dir.listFiles()) {
-				if (file.isDirectory()) {
+				sftp.cd(directory);
+				if (file.isDirectory()) {				
 					try {
 						sftp.cd(file.getName());
 					} catch (Exception e) {
@@ -98,7 +100,7 @@ public class SFTPUtil {
 					//System.out.println("当前服务器目录：" + sftp.pwd() + " 本地目录：" + file.getPath());
 					uploadDirectory(sftp.pwd(), file.getPath());
 				} else {
-					upload(directory, file.getPath());
+					upload(sftp.pwd(), file.getPath());
 				}
 			}
 		} catch (Exception e) {
@@ -169,13 +171,25 @@ public class SFTPUtil {
 	public Vector listFiles(String directory) throws SftpException {
 		return sftp.ls(directory);
 	}
+	
+	/**
+	 * 断开连接
+	 */
+	public void disconnect() {
+		if (sftp != null) {
+			sftp.disconnect();
+		}
+		if (session != null) {
+			session.disconnect();
+		}
+	}
 
 	public static void main(String[] args) throws SftpException {
-		String ip = "192.168.11.128";
+		String ip = "192.168.221.128";
 		int port = 2222;
 		String user = "root";
 		String password = "qazzaqqq";
-		String directory = "/root";
+		String directory = "/root/new";
 		String uploadFile = "E:\\newstar.rar";
 		String downloadFile = "out.txt";
 		String saveFile = "E:\\new\\download.txt";
@@ -185,10 +199,10 @@ public class SFTPUtil {
 		String uploadDirectory = "E:\\new";
 
 		SFTPUtil util = new SFTPUtil(ip, port, user, password);
-		 util.upload(directory, uploadFile);
+		// util.upload(directory, uploadFile);
 		// util.download(directory, downloadFile, saveFile);
 		// util.delete("", deleteFile);
-		// util.uploadDirectory(directory, uploadDirectory);
+		 util.uploadDirectory(directory, uploadDirectory);
 		// util.delete(delete);
 	}
 }
