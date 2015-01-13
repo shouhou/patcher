@@ -104,8 +104,6 @@ public class ShellUtil {
 			Hashtable config = new Hashtable();
 			config.put("StrictHostKeyChecking", "no");
 			session.setConfig(config);
-			localUserInfo ui = new localUserInfo();
-			session.setUserInfo(ui);
 			session.connect();
 			shell = (ChannelShell) session.openChannel("shell");
 			Expect4j expect = new Expect4j(shell.getInputStream(),
@@ -251,36 +249,8 @@ public class ShellUtil {
 		return false;
 	}
 
-	public static class localUserInfo implements UserInfo {
-		String passwd;
-
-		public String getPassword() {
-			return passwd;
-		}
-
-		public boolean promptYesNo(String str) {
-			return true;
-		}
-
-		public String getPassphrase() {
-			return null;
-		}
-
-		public boolean promptPassphrase(String message) {
-			return true;
-		}
-
-		public boolean promptPassword(String message) {
-			return true;
-		}
-
-		public void showMessage(String message) {
-
-		}
-	}
-
 	public static void main(String[] args) {
-		String host = "192.168.10.138";
+		String host = "192.168.221.128";
 		int port = 2222;
 		String username = "root";
 		String password = "qazzaqqq";

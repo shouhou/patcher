@@ -1,14 +1,16 @@
 package com.allinno.patcher;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Locale;
-import java.util.ResourceBundle;
+import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -41,35 +43,73 @@ public class SmartPatcher {
 	private String isUpload;
 	private String isRestart;
 
+	private String basePath;
+	
+	//private static final Logger log = LoggerFactory.getLogger(SmartPatcher.class);
+
 	public SmartPatcher() {
-		Locale locale = Locale.getDefault();
-		ResourceBundle localResource = ResourceBundle.getBundle("application",
-				locale);
-		this.filePath = localResource.getString("patcher.filePath");
-		this.target = localResource.getString("patcher.target");
+		basePath = System.getProperty("user.dir");
+		Properties props = new Properties();
+		try {
+			//如果同级目录存在配置文件则使用该文件，否则用默认的
+			File file = new File(basePath + "\\application.properties");
+			InputStream in;
+			if (file.exists()) {
+				in = new BufferedInputStream(new FileInputStream(file));	
+			}else{
+				in = getClass().getClassLoader().getResourceAsStream("application.properties");
+			}
+			props.load(in);
+			
+			//如果配置文件中执行导出更新日志的位置，则采用,否则在jar包同级目录生成
+			this.filePath = props.getProperty("patcher.filePath");			
+			File filePath = new File(this.filePath);
+			if (!filePath.exists()) {
+				this.filePath = this.basePath + "/patch_files.txt";
+				file = new File(this.filePath);
+				file.createNewFile();
+			}
+			
+			//如果配置文件中执行导出更新文件的位置，则采用,否则在jar包同级目录生成
+			this.target = props.getProperty("patcher.target");
+			File patchDir = new File(this.target);
+			if (!patchDir.exists()) {
+				this.target = this.basePath + "\\patcher";
+			}
 
-		this.proPath = localResource.getString("patcher.proPath");
-		this.serverPath = localResource.getString("patcher.serverPath");
-		this.serverProPath = localResource.getString("patcher.serverProPath");
+			this.proPath = props.getProperty("patcher.proPath");
+			this.serverPath = props.getProperty("patcher.serverPath");
+			this.serverProPath = props.getProperty("patcher.serverProPath");
 
-		this.ip = localResource.getString("shell.ip");
-		this.port = Integer.parseInt(localResource.getString("shell.port"));
-		this.user = localResource.getString("shell.user");
-		this.password = localResource.getString("shell.password");
+			this.ip = props.getProperty("shell.ip");
+			this.port = Integer.parseInt(props.getProperty("shell.port"));
+			this.user = props.getProperty("shell.user");
+			this.password = props.getProperty("shell.password");
 
-		this.isUpload = localResource.getString("shell.isUpload");
-		this.isRestart = localResource.getString("shell.isRestart");
+			this.isUpload = props.getProperty("shell.isUpload");
+			this.isRestart = props.getProperty("shell.isRestart");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		/*
+		 * Locale locale = Locale.getDefault(); ResourceBundle localResource =
+		 * ResourceBundle.getBundle("application",locale); this.filePath =
+		 * localResource.getString("patcher.filePath");
+		 */
+
 		delList = new ArrayList<String>();
 	}
 
-	public void createPatch() throws Exception {
-		File fileP = new File(this.filePath);
-		if (!fileP.exists()) {
-			fileP.createNewFile();
+	public void createPatch() {
+		try {
+			FileOutputStream fos = new FileOutputStream(this.filePath);
+			String strCmd = (new GitLog()).getCmd();
+			CmdUtil.executeCmd(strCmd, fos);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		FileOutputStream fos = new FileOutputStream(this.filePath);
-		String strCmd = (new GitLog()).getCmd();
-		CmdUtil.executeCmd(strCmd, fos);
 	}
 
 	private void donePatch(File srcFile, File destFile, String status)
@@ -114,11 +154,12 @@ public class SmartPatcher {
 			sftp.delete(del);
 			System.out.println("删除服务器文件:" + del);
 		}
-
+		sftp.disconnect();
 	}
 
 	public void doPatch(String srcName, String destName, String status)
 			throws IOException {
+
 		File baseDir = new File(this.proPath);
 		File patchDir = new File(this.target);
 
@@ -161,6 +202,7 @@ public class SmartPatcher {
 			return false;
 		}
 		File patchDir = new File(this.target);
+		patchDir = new File(this.target);
 		if (patchDir.exists()) {
 			System.out.println("补丁目录已存在，执行删除操作。。。");
 			patchDir.delete();
@@ -252,8 +294,7 @@ public class SmartPatcher {
 			return;
 		}
 		// shutdown
-		ShellUtil sl = new ShellUtil(this.ip, this.port, this.user,
-				this.password);
+		ShellUtil sl = new ShellUtil(this.ip, this.port, this.user,this.password);
 		String[] commands = new String[3];
 		commands[0] = "pid=`ps aux | grep tomcat | grep -v grep | grep -v retomcat | awk '{print $2}'`";
 		commands[1] = "kill -9 $pid";
@@ -271,18 +312,17 @@ public class SmartPatcher {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException {
-		/*
-		 * for (String arg : args) { System.out.println(arg); if
-		 * ("-h".equals(arg)) { System.out.println("help"); } }
-		 */
+		for (String arg : args) {
+			System.out.println(arg);
+			if ("-h".equals(arg)) {
+				System.out.println("help");
+			}
+		}
 
-		/*
-		 * SmartPatcher patcher = new SmartPatcher(); patcher.createPatch(); //
-		 * 执行命令，生成patch列表文件 patcher.patch(); // 生成补丁 patcher.upload();
-		 * patcher.restart();
-		 */
-
-		String relativelyPath = System.getProperty("user.dir");
-		System.out.println(relativelyPath);
+		SmartPatcher patcher = new SmartPatcher();
+		//patcher.createPatch();// 执行命令，生成patch列表文件
+		//patcher.patch(); // 生成补丁
+		//patcher.upload();
+		patcher.restart();
 	}
 }
