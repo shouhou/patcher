@@ -36,6 +36,10 @@ public class SmartPatcher {
 	private String serverPath;
 	private String serverProPath;
 	private String target;
+	
+	private String sinceDate;
+	private String untilDate;
+	private String author;
 
 	private String ip;
 	private int port;
@@ -91,6 +95,10 @@ public class SmartPatcher {
 			this.user = props.getProperty("shell.user");
 			this.password = props.getProperty("shell.password");
 
+			this.sinceDate = props.getProperty("gitlog.sinceDate");
+			this.untilDate = props.getProperty("gitlog.untilDate");
+			this.author = props.getProperty("gitlog.author");
+			
 			this.isUpload = props.getProperty("shell.isUpload");
 			this.isRestart = props.getProperty("shell.isRestart");
 		} catch (Exception e) {
@@ -109,7 +117,7 @@ public class SmartPatcher {
 	public void createPatch() {
 		try {
 			FileOutputStream fos = new FileOutputStream(this.filePath);
-			String strCmd = (new GitLog()).getCmd();
+			String strCmd = (new GitLog(this.proPath,this.sinceDate,this.untilDate,this.author)).getCmd();
 			CmdUtil.executeCmd(strCmd, fos);
 			log.debug("读取更新文件信息完成!");
 		} catch (Exception e) {

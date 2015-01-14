@@ -102,7 +102,7 @@ public class CmdUtil {
 		// System.out.print(str);
 
 		FileOutputStream fos = new FileOutputStream("e:\\out.txt");
-		String strCmd = (new GitLog()).getCmd();
-		CmdUtil.executeCmd(strCmd, fos);
+		//String strCmd = (new GitLog()).getCmd();
+		//CmdUtil.executeCmd(strCmd, fos);
 	}
 }
