@@ -18,6 +18,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.allinno.util.CmdUtil;
+import com.allinno.util.FileUtil;
 import com.allinno.util.GitLog;
 import com.allinno.util.SFTPUtil;
 import com.allinno.util.ShellUtil;
@@ -93,7 +94,7 @@ public class SmartPatcher {
 			this.isUpload = props.getProperty("shell.isUpload");
 			this.isRestart = props.getProperty("shell.isRestart");
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error(e.getMessage());
 		}
 
 		/*
@@ -110,9 +111,9 @@ public class SmartPatcher {
 			FileOutputStream fos = new FileOutputStream(this.filePath);
 			String strCmd = (new GitLog()).getCmd();
 			CmdUtil.executeCmd(strCmd, fos);
-			
+			log.debug("读取更新文件信息完成!");
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error(e.getMessage());
 		}
 	}
 
@@ -160,6 +161,7 @@ public class SmartPatcher {
 			log.debug("删除服务器文件:" + del);
 		}
 		sftp.disconnect();
+		log.debug("上传补丁文件完成!");
 	}
 
 	public void doPatch(String srcName, String destName, String status)
@@ -210,7 +212,7 @@ public class SmartPatcher {
 		patchDir = new File(this.target);
 		if (patchDir.exists()) {
 			log.debug("补丁目录已存在，执行删除操作。。。");
-			patchDir.delete();
+			FileUtil.delete(patchDir);
 		}
 		log.debug("执行创建补丁目录操作。。。");
 		patchDir.mkdirs();
@@ -288,7 +290,7 @@ public class SmartPatcher {
 			}
 			log.debug("\r\n补丁列表文件处理完成。");
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.error(e.getMessage());
 		} finally {
 			IOUtils.closeQuietly(br);
 		}
@@ -315,6 +317,7 @@ public class SmartPatcher {
 		log.debug("IsSuccess:" + sl.executeCommands(commands));
 		//log.debug(sl.getResponse());
 		sl.disconnect();
+		log.debug("重启服务器完成!");
 	}
 
 	public static void main(String[] args) throws FileNotFoundException {
@@ -327,7 +330,7 @@ public class SmartPatcher {
 		SmartPatcher patcher = new SmartPatcher();
 		patcher.createPatch();// 执行命令，生成patch列表文件
 		patcher.patch(); // 生成补丁
-		//patcher.upload();
-		//patcher.restart();
+		patcher.upload();
+		patcher.restart();
 	}
 }

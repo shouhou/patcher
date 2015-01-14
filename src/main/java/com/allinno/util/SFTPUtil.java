@@ -3,14 +3,12 @@ package com.allinno.util;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.util.Locale;
 import java.util.Properties;
-import java.util.ResourceBundle;
 import java.util.Vector;
 
 import org.apache.log4j.Logger;
 
-import com.allinno.patcher.SmartPatcher;
+import com.allinno.common.FileProgressMonitor;
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;

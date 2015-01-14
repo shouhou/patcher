@@ -1,4 +1,4 @@
-package com.allinno.util;
+package com.allinno.common;
 
 import com.jcraft.jsch.SftpProgressMonitor;
 
