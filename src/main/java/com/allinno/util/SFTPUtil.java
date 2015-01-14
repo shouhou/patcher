@@ -8,6 +8,9 @@ import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Vector;
 
+import org.apache.log4j.Logger;
+
+import com.allinno.patcher.SmartPatcher;
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
@@ -22,6 +25,8 @@ public class SFTPUtil {
 	private String password;
 	public Session session;
 	public ChannelSftp sftp;
+	
+	private Logger log = Logger.getLogger(SFTPUtil.class);
 
 	public SFTPUtil(String ip, int port, String user, String password) {
 		this.ip = ip;
@@ -41,15 +46,15 @@ public class SFTPUtil {
 			Properties sshConfig = new Properties();
 			sshConfig.put("StrictHostKeyChecking", "no");
 			session.setConfig(sshConfig);
-			System.out.println("Start to connect" + ip + ":" + port);
+			log.debug("Start to connect" + ip + ":" + port);
 			session.connect();
 			Channel channel = session.openChannel("sftp");
 			channel.connect();
 			sftp = (ChannelSftp) channel;
-			System.out.println("Connected to " + ip + ":" + port);
+			log.debug("Connected to " + ip + ":" + port);
 			return sftp;
 		} catch (Exception e) {
-			System.out.println("Connect to " + ip + ":" + port+ "Failed,Please Check Name and Password!");	
+			log.debug("Connect to " + ip + ":" + port+ "Failed,Please Check Name and Password!");	
 			e.printStackTrace();
 		}
 		return null;
@@ -86,7 +91,7 @@ public class SFTPUtil {
 	 */
 	public void uploadDirectory(String directory, String uploadDirectory) {
 		try {
-			System.out.println("上传目录:" + uploadDirectory);
+			log.debug("Upload:" + uploadDirectory+"--->"+directory);
 			File dir = new File(uploadDirectory);
 			for (File file : dir.listFiles()) {
 				sftp.cd(directory);
@@ -105,6 +110,7 @@ public class SFTPUtil {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			log.debug(e.getMessage());
 		}
 	}
 

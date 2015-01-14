@@ -14,6 +14,8 @@ import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
 import com.allinno.util.CmdUtil;
 import com.allinno.util.GitLog;
@@ -22,8 +24,8 @@ import com.allinno.util.ShellUtil;
 
 /**
  * 
- * @author json
- * @version 1.1
+ * @author shouhou
+ * @version 2.2.0
  * 
  */
 
@@ -44,6 +46,8 @@ public class SmartPatcher {
 	private String isRestart;
 
 	private String basePath;
+	
+	private Logger log = Logger.getLogger(SmartPatcher.class);
 	
 	//private static final Logger log = LoggerFactory.getLogger(SmartPatcher.class);
 
@@ -115,7 +119,7 @@ public class SmartPatcher {
 	private void donePatch(File srcFile, File destFile, String status)
 			throws IOException {
 		if ("D".equals(status)) {
-			System.out.println("清除文件：" + srcFile.getPath());
+			log.debug("清除文件：" + srcFile.getPath());
 
 			// 记录服务器要删除的文件
 			String del = srcFile.getPath().replace("\\", "/");
@@ -123,15 +127,16 @@ public class SmartPatcher {
 			delList.add(del);
 
 			if (!srcFile.exists()) {
-				System.out.println("清除文件清除成功！！！");
+				log.debug("清除文件清除成功！！！");
+				
 				return;
 			} else {
 				FileUtils.deleteDirectory(srcFile);
-				System.out.println("清除文件清除成功！！！");
+				log.debug("清除文件清除成功！！！");
 			}
 		} else {
-			System.out.println("原文件：" + srcFile.getPath());
-			System.out.println("目标文件：" + destFile.getPath());
+			log.debug("原文件：" + srcFile.getPath());
+			log.debug("目标文件：" + destFile.getPath());
 
 			if (!srcFile.exists()) {
 				System.err.println("原文件不存在！！！");
@@ -145,14 +150,14 @@ public class SmartPatcher {
 		if (!"Y".equals(this.isUpload)) {
 			return;
 		}
-		System.out.println("\r\n \r\n \r\n开始上传补丁到服务器");
+		log.debug("\r\n \r\n \r\n开始上传补丁到服务器");
 		System.out
 				.println("-----------------------------------------------------------");
 		SFTPUtil sftp = new SFTPUtil(ip, port, user, password);
 		sftp.uploadDirectory(serverProPath, target);// 更新文件
 		for (String del : delList) {
 			sftp.delete(del);
-			System.out.println("删除服务器文件:" + del);
+			log.debug("删除服务器文件:" + del);
 		}
 		sftp.disconnect();
 	}
@@ -204,10 +209,10 @@ public class SmartPatcher {
 		File patchDir = new File(this.target);
 		patchDir = new File(this.target);
 		if (patchDir.exists()) {
-			System.out.println("补丁目录已存在，执行删除操作。。。");
+			log.debug("补丁目录已存在，执行删除操作。。。");
 			patchDir.delete();
 		}
-		System.out.println("执行创建补丁目录操作。。。");
+		log.debug("执行创建补丁目录操作。。。");
 		patchDir.mkdirs();
 		return true;
 	}
@@ -222,28 +227,28 @@ public class SmartPatcher {
 		String fileName = null;
 		String status = null;
 		try {
-			System.out.println("\r\n开始处理补丁列表文件。。。");
+			log.debug("\r\n开始处理补丁列表文件。。。");
 			while ((line = br.readLine()) != null) {
 				if (line.trim().length() == 0) {
-					System.out.println("\r\n空行，跳过。。。");
+					log.debug("\r\n空行，跳过。。。");
 					continue;
 				}
 				if (line.trim().startsWith("[Log]")) {
-					System.out.println("\r\n" + line.trim());
+					log.debug("\r\n" + line.trim());
 					System.out
 							.println("------------------------------------------------------");
 					continue;
 				}
 
 				line = line.trim().replaceAll("\\\\", "/");
-				System.out.println("\r\n文件：" + line);
+				log.debug("\r\n文件：" + line);
 
 				fileName = line.substring(2);
 				status = line.substring(0, 1);
 
 				String suffix = fileName
 						.substring(fileName.lastIndexOf(".") + 1);
-				System.out.println("后缀：" + suffix);
+				log.debug("后缀：" + suffix);
 				String srcName = "";
 				String destName = "";
 
@@ -281,7 +286,7 @@ public class SmartPatcher {
 				}
 				doPatch(srcName, destName, status);
 			}
-			System.out.println("\r\n补丁列表文件处理完成。");
+			log.debug("\r\n补丁列表文件处理完成。");
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -299,7 +304,7 @@ public class SmartPatcher {
 		commands[0] = "pid=`ps aux | grep tomcat | grep -v grep | grep -v retomcat | awk '{print $2}'`";
 		commands[1] = "kill -9 $pid";
 		commands[2] = "sleep 5";// 休眠5秒
-		System.out.println("IsSuccess:" + sl.executeCommands(commands));
+		log.debug("IsSuccess:" + sl.executeCommands(commands));
 		sl.disconnect();
 
 		// start
@@ -307,8 +312,8 @@ public class SmartPatcher {
 		commands = new String[2];
 		commands[0] = "cd " + this.serverPath + "/bin";
 		commands[1] = "./startup.sh";
-		System.out.println("IsSuccess:" + sl.executeCommands(commands));
-		//System.out.println(sl.getResponse());
+		log.debug("IsSuccess:" + sl.executeCommands(commands));
+		//log.debug(sl.getResponse());
 		sl.disconnect();
 	}
 
@@ -322,7 +327,7 @@ public class SmartPatcher {
 		SmartPatcher patcher = new SmartPatcher();
 		patcher.createPatch();// 执行命令，生成patch列表文件
 		patcher.patch(); // 生成补丁
-		patcher.upload();
-		patcher.restart();
+		//patcher.upload();
+		//patcher.restart();
 	}
 }

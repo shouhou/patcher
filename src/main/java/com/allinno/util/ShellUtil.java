@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
+import org.apache.log4j.Logger;
 import org.apache.oro.text.regex.MalformedPatternException;
 
 import com.jcraft.jsch.Channel;
@@ -39,8 +40,7 @@ public class ShellUtil {
 	public static final int SSH_PORT = 22;
 
 	// 正则匹配，用于处理服务器返回的结果
-	public static String[] linuxPromptRegEx = new String[] { "~]#", "~#", "#",
-			":~#", "/$", ">" };
+	public static String[] linuxPromptRegEx = new String[] { "~]#", "~#", "#",":~#", "/$", ">" };
 
 	public static String[] errorMsg = new String[] { "could not acquire the config lock " };
 
@@ -52,18 +52,7 @@ public class ShellUtil {
 	private String user;
 	// ssh服务器的登入密码
 	private String password;
-
-	public ShellUtil() {
-		Locale locale = Locale.getDefault();
-		ResourceBundle localResource = ResourceBundle.getBundle("application",
-				locale);
-		this.ip = localResource.getString("shell.ip");
-		this.port = Integer.parseInt(localResource.getString("shell.port"));
-		this.user = localResource.getString("shell.user");
-		this.password = localResource.getString("shell.password");
-		expect = getExpect();
-
-	}
+	private Logger log = Logger.getLogger(ShellUtil.class);
 
 	public ShellUtil(String ip, int port, String user, String password) {
 		this.ip = ip;
@@ -97,7 +86,7 @@ public class ShellUtil {
 	// 获得Expect4j对象，该对象可以往SSH发送命令请求
 	private Expect4j getExpect() {
 		try {
-			System.out.println("Start logging to %s@%s:%s" + user + ip + port);
+			log.debug("Start to connect" + ip + ":" + port);
 			JSch jsch = new JSch();
 			session = jsch.getSession(user, ip, port);
 			session.setPassword(password);
@@ -106,47 +95,21 @@ public class ShellUtil {
 			session.setConfig(config);
 			session.connect();
 			shell = (ChannelShell) session.openChannel("shell");
-			Expect4j expect = new Expect4j(shell.getInputStream(),
-					shell.getOutputStream());
+			Expect4j expect = new Expect4j(shell.getInputStream(),shell.getOutputStream());
 			shell.connect();
-			System.out.println("Logging to %s@%s:%s successfully!" + user + ip
-					+ port);
+			log.debug("Connected to " + ip + ":" + port);
 			return expect;
 		} catch (Exception ex) {
-			System.out.println("Connect to " + ip + ":" + port
-					+ "failed,please check your username and password!");
+			log.debug("Connect to " + ip + ":" + port+ "Failed,Please Check Name and Password!");	
 			ex.printStackTrace();
 		}
 		return null;
 	}
 
-	// 获取sftp对象，
-	private ChannelSftp getFtp() {
-		try {
-			JSch jsch = new JSch();
-			jsch.getSession(user, ip, port);
-			Session sshSession = jsch.getSession(user, ip, port);
-			System.out.println("Session created.");
-			sshSession.setPassword(password);
-			Hashtable config = new Hashtable();
-			config.put("StrictHostKeyChecking", "no");
-			sshSession.setConfig(config);
-			sshSession.connect();
-			Channel channel = sshSession.openChannel("sftp");
-			channel.connect();
-			sftp = (ChannelSftp) channel;
-			System.out.println("Connected to " + ip + ":" + port);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return sftp;
-	}
-
 	/**
 	 * 执行配置命令
 	 * 
-	 * @param commands
-	 *            要执行的命令，为字符数组
+	 * @param commands 要执行的命令，为字符数组
 	 * @return 执行是否成功
 	 */
 	public boolean executeCommands(String[] commands) {
@@ -156,14 +119,11 @@ public class ShellUtil {
 		}
 		for (int i = 0; i < commands.length; i++) {
 			String command = commands[i];
-			System.out.println(command);
+			log.debug(command);
 		}
 		Closure closure = new Closure() {
 			public void run(ExpectState expectState) throws Exception {
-				buffer.append(expectState.getBuffer());// buffer is string
-														// buffer for appending
-														// output of executed
-														// command
+				buffer.append(expectState.getBuffer());
 				expectState.exp_continue();
 
 			}
@@ -172,12 +132,8 @@ public class ShellUtil {
 		String[] regEx = linuxPromptRegEx;
 		if (regEx != null && regEx.length > 0) {
 			synchronized (regEx) {
-				for (int i = 0; i < regEx.length; i++) {// list of regx like,
-														// :>, />
+				for (int i = 0; i < regEx.length; i++) {
 					String regexElement = regEx[i];
-					// etc. it is possible
-					// command prompts of your
-					// remote machine
 					try {
 						RegExpMatch mat = new RegExpMatch(regexElement, closure);
 						lstPattern.add(mat);
@@ -187,16 +143,8 @@ public class ShellUtil {
 						return false;
 					}
 				}
-				lstPattern.add(new EofMatch(new Closure() { // should cause
-															// entire page to be
-															// collected
-							public void run(ExpectState state) {
-							}
-						}));
-				lstPattern.add(new TimeoutMatch(defaultTimeOut, new Closure() {
-					public void run(ExpectState state) {
-					}
-				}));
+				lstPattern.add(new EofMatch(new Closure() {public void run(ExpectState state) {}}));
+				lstPattern.add(new TimeoutMatch(defaultTimeOut, new Closure() {public void run(ExpectState state) {}}));
 			}
 		}
 		try {

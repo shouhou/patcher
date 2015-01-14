@@ -9,6 +9,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 
+import org.apache.log4j.Logger;
+
+import com.allinno.patcher.SmartPatcher;
+
 class StreamGobbler extends Thread {
 	InputStream is;
 	OutputStream os;
@@ -44,12 +48,15 @@ class StreamGobbler extends Thread {
 }
 
 public class CmdUtil {
+	public static Logger log = Logger.getLogger(CmdUtil.class);
+
 	public static int executeCmd(String strCmd) {
 		return executeCmd(strCmd, null);
 	}
 
 	public static int executeCmd(String strCmd, OutputStream os) {
 		try {
+			log.debug("Execute cmd:" + strCmd);
 			Runtime rt = Runtime.getRuntime();
 			Process proc = rt.exec(strCmd);
 			// StreamGobbler gobbler = new StreamGobbler(proc.getInputStream(),
@@ -62,21 +69,25 @@ public class CmdUtil {
 			InputStreamReader isr = new InputStreamReader(is, "GBK");
 			BufferedReader br = new BufferedReader(isr);
 			String line = null;
+			log.debug("Git更新信息如下:");
+			log.debug("----------------------------------------------");
 			while ((line = br.readLine()) != null) {
 				buf.append(line + '\n');
 				if (pw != null) {
 					pw.println(line);
 				}
-				System.out.println(line);
-				//System.out.flush();
+				log.debug(line);
+				// System.out.println(line);
+				// System.out.flush();
 			}
+			log.debug("----------------------------------------------");
 			if (pw != null) {
 				pw.flush();
 				pw.close();
 			}
 
 			int val = proc.waitFor();
-			System.out.println("ExitValue: " + val);
+			log.debug("Cmd result:" + val);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return -1;
