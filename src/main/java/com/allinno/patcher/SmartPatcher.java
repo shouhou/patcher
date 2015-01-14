@@ -308,6 +308,7 @@ public class SmartPatcher {
 		commands[0] = "cd " + this.serverPath + "/bin";
 		commands[1] = "./startup.sh";
 		System.out.println("IsSuccess:" + sl.executeCommands(commands));
+		//System.out.println(sl.getResponse());
 		sl.disconnect();
 	}
 
@@ -318,11 +319,10 @@ public class SmartPatcher {
 				System.out.println("help");
 			}
 		}
-
 		SmartPatcher patcher = new SmartPatcher();
-		//patcher.createPatch();// 执行命令，生成patch列表文件
-		//patcher.patch(); // 生成补丁
-		//patcher.upload();
+		patcher.createPatch();// 执行命令，生成patch列表文件
+		patcher.patch(); // 生成补丁
+		patcher.upload();
 		patcher.restart();
 	}
 }

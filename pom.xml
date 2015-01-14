@@ -32,15 +32,20 @@
 			<version>4.11</version>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
+			<dependency>
     		<groupId>com.jcraft</groupId>
     		<artifactId>jsch</artifactId>
-   		 	<version>0.1.51</version>
+    		<version>0.1.31</version>
 		</dependency>
 		<dependency>
     		<groupId>com.github.cverges.expect4j</groupId>
     		<artifactId>expect4j</artifactId>
-    		<version>1.6</version>
+    		<version>1.0</version>
+		</dependency>		
+		<dependency>
+    		<groupId>ant</groupId>
+    		<artifactId>ant-jakarta-oro</artifactId>
+    		<version>2.0.7</version>
 		</dependency>	
 	</dependencies>
 	<build>
